@@ -1,9 +1,10 @@
 -- | A very simple forms library for Toestand
 module Formula
-  ( Input, InputOn, viewInput, bindInput, bindInputOn
+  ( Text, viewText
+  , Input, InputOn, viewInput, bindInput, bindInputOn
   , Checkbox, CheckboxOn, bindCheckbox, bindCheckboxOn ) where
 
-import Prelude (Unit, bind, const, not, pure, void, ($), (<<<))
+import Prelude (Unit, bind, const, not, pure, void, ($), (<<<), (<$>))
 import DOM.Simple.Event as DE
 import Effect (Effect)
 import Reactix as R
@@ -12,7 +13,17 @@ import Toestand as T
 import Record as Record
 import Record.Builder as RB
 import Type.Prelude (SProxy(..))
-import Typisch.Row (class Cons, class Cons2, class Replaces)
+import Typisch.Row (class Cons, class Cons2, class Cons3, class Replaces)
+
+type Text cell = ( text :: cell )
+
+-- | Render some text from a view over a string
+viewText :: forall cell. T.Read cell String => Record (Text cell) -> R.Element
+viewText props = R.createElement viewTextCpt props []
+
+viewTextCpt :: forall cell. T.Read cell String => R.Memo (Text cell)
+viewTextCpt = R.memo' (R.hooksComponent "viewText" cpt) where
+  cpt props@{ text } _ = H.text <$> T.useLive T.unequal text
 
 type Builder l r = RB.Builder (Record l) (Record r)
 
@@ -122,7 +133,7 @@ type Checkbox v r = ( checked :: v | r )
 
 type CheckboxOn v r on = ( on :: Record on | Checkbox v r )
 
-type BindCheckbox r on = ( on :: (Record (BindChange on)) | Checkbox Boolean r )
+type BindCheckbox r on = ( on :: (Record (BindChange on)), type :: String | Checkbox Boolean r )
 
 -- | Render a checkbox component whose value is the value of the given
 -- | cursor. Refreshes when the view is updated. Changes to the input
@@ -131,7 +142,13 @@ type BindCheckbox r on = ( on :: (Record (BindChange on)) | Checkbox Boolean r )
 bindCheckbox
   :: forall cell base
    . T.ReadWrite cell Boolean
-  => Cons2 "checked" Boolean "on" (Record (BindChange ())) base (Checkbox Boolean base) (BindCheckbox base ())
+  => Cons3 "checked" Boolean
+           "on"      (Record (BindChange ()))
+           "type"    String
+           base
+           (Checkbox Boolean base)
+           (CheckboxOn Boolean (BindChange ()) base)
+           (BindCheckbox base ())
   => Cons  "checked" cell base (Checkbox cell base)
   => Record (Checkbox cell base) -> R.Element
 bindCheckbox props = R.createElement bindCheckboxCpt props []
@@ -139,7 +156,13 @@ bindCheckbox props = R.createElement bindCheckboxCpt props []
 bindCheckboxCpt
   :: forall cell base
    . T.ReadWrite cell Boolean
-  => Cons2 "checked" Boolean "on" (Record (BindChange ())) base (Checkbox Boolean base) (BindCheckbox base ())
+  => Cons3 "checked" Boolean
+           "on"      (Record (BindChange ()))
+           "type"    String
+           base
+           (Checkbox Boolean base)
+           (CheckboxOn Boolean (BindChange ()) base)
+           (BindCheckbox base ())
   => Cons  "checked" cell base (Checkbox cell base)
   => R.Memo (Checkbox cell base)
 bindCheckboxCpt = R.memo' (R.hooksComponent "bindCheckbox" cpt) where
@@ -149,27 +172,39 @@ bindCheckboxCpt = R.memo' (R.hooksComponent "bindCheckbox" cpt) where
     pure $ H.input $ RB.build (adjust val) props
     where
       adjust :: Boolean -> Builder (Checkbox cell base) (BindCheckbox base ())
-      adjust val = RB.insert onP { change: change val } <<< RB.modify checkedP (const val)
-      onP = SProxy :: SProxy "on"
-      changeP = SProxy :: SProxy "change"
-      checkedP = SProxy :: SProxy "checked"
-      change :: Boolean -> ChangeEvent -> Effect Unit
-      change val e = void $ T.write (not val) checked
+      adjust val = addType <<< addOn <<< changeChecked where
+        change :: ChangeEvent -> Effect Unit
+        change e = void $ T.write (not val) checked
+        addType = RB.insert (SProxy :: SProxy "type") "checkbox"
+        addOn   = RB.insert (SProxy :: SProxy "on") { change }
+        changeChecked = RB.modify (SProxy :: SProxy "checked") (const val)
 
 -- | Like `bindCheckbox` but allows you to add to the 'on' prop
 bindCheckboxOn
-  :: forall cell base on props' inner'
+  :: forall cell base on inner'
    . T.ReadWrite cell Boolean
-  => Cons2 "on" (Record on)              "checked" cell    base props' (CheckboxOn cell base on)
+  => Cons3 "checked" Boolean
+           "on"      (Record (BindChange on))
+           "type"    String
+           base
+           (Checkbox Boolean base)
+           (CheckboxOn Boolean (BindChange on) base)
+           (BindCheckbox base on)
   => Cons2 "on" (Record (BindChange on)) "checked" Boolean base inner' (BindCheckbox base on)
   => Cons "change" (ChangeEvent -> Effect Unit) on (BindChange on)
   => Record (CheckboxOn cell base on) -> R.Element
 bindCheckboxOn props = R.createElement bindCheckboxOnCpt props []
 
 bindCheckboxOnCpt
-  :: forall cell base on props' inner'
+  :: forall cell base on inner'
    . T.ReadWrite cell Boolean
-  => Cons2 "on" (Record on)              "checked" cell    base props' (CheckboxOn cell base on)
+  => Cons3 "checked" Boolean
+           "on"      (Record (BindChange on))
+           "type"    String
+           base
+           (Checkbox Boolean base)
+           (CheckboxOn Boolean (BindChange on) base)
+           (BindCheckbox base on)
   => Cons2 "on" (Record (BindChange on)) "checked" Boolean base inner' (BindCheckbox base on)
   => Cons "change" (ChangeEvent -> Effect Unit) on (BindChange on)
   => R.Memo (CheckboxOn cell base on)
@@ -180,9 +215,10 @@ bindCheckboxOnCpt = R.memo' (R.hooksComponent "bindCheckbox'" cpt) where
     pure $ H.input (RB.build (adjust val) props)
     where
       adjust :: Boolean -> Builder (CheckboxOn cell base on) (BindCheckbox base on)
-      adjust val = RB.modify onP (Record.insert changeP $ change val) <<< RB.modify checkedP (const val)
-      onP = SProxy :: SProxy "on"
-      checkedP = SProxy :: SProxy "checked"
-      changeP = SProxy :: SProxy "change"
-      change :: Boolean -> ChangeEvent -> Effect Unit
-      change val e = void $ T.write (not val) checked
+      adjust val = addType <<< changeOn <<< changeChecked where
+        change :: ChangeEvent -> Effect Unit
+        change e = void $ T.write (not val) checked
+        addType = RB.insert (SProxy :: SProxy "type") "checkbox"
+        changeChecked = RB.modify (SProxy :: SProxy "checked") (const val)
+        changeOn  = RB.modify (SProxy :: SProxy "on") (Record.insert changeP change) where
+          changeP = SProxy :: SProxy "change"

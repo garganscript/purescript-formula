@@ -169,7 +169,7 @@ let additions =
           mkPackage
             [ "prelude" ]
             "https://github.com/poorscript/purescript-typisch"
-            "v0.2.0"
+            "v0.2.1"
       , inflection =
           mkPackage
             [ "functions" ]
