@@ -147,7 +147,7 @@ bindCheckbox
            "type"    String
            base
            (Checkbox Boolean base)
-           (CheckboxOn Boolean (BindChange ()) base)
+           (CheckboxOn Boolean base (BindChange ()))
            (BindCheckbox base ())
   => Cons  "checked" cell base (Checkbox cell base)
   => Record (Checkbox cell base) -> R.Element
@@ -161,7 +161,7 @@ bindCheckboxCpt
            "type"    String
            base
            (Checkbox Boolean base)
-           (CheckboxOn Boolean (BindChange ()) base)
+           (CheckboxOn Boolean base (BindChange ()))
            (BindCheckbox base ())
   => Cons  "checked" cell base (Checkbox cell base)
   => R.Memo (Checkbox cell base)
@@ -188,7 +188,7 @@ bindCheckboxOn
            "type"    String
            base
            (Checkbox Boolean base)
-           (CheckboxOn Boolean (BindChange on) base)
+           (CheckboxOn Boolean base (BindChange on))
            (BindCheckbox base on)
   => Cons2 "on" (Record (BindChange on)) "checked" Boolean base inner' (BindCheckbox base on)
   => Cons "change" (ChangeEvent -> Effect Unit) on (BindChange on)
@@ -203,7 +203,7 @@ bindCheckboxOnCpt
            "type"    String
            base
            (Checkbox Boolean base)
-           (CheckboxOn Boolean (BindChange on) base)
+           (CheckboxOn Boolean base (BindChange on))
            (BindCheckbox base on)
   => Cons2 "on" (Record (BindChange on)) "checked" Boolean base inner' (BindCheckbox base on)
   => Cons "change" (ChangeEvent -> Effect Unit) on (BindChange on)
