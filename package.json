@@ -20,9 +20,9 @@
     "mocha": "^6.2.2",
     "psc-package": "^3.0.1",
     "pulp": "^13.0.0",
-    "purescript": "^0.13.8",
+    "purescript": "^0.15.4",
     "react": "^17.0.1",
-    "spago": "^0.10.0"
+    "spago": "^0.20.9"
   },
   "dependencies": {}
 }

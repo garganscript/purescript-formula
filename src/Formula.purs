@@ -12,7 +12,7 @@ import Reactix.DOM.HTML as H
 import Toestand as T
 import Record as Record
 import Record.Builder as RB
-import Type.Prelude (SProxy(..))
+import Type.Proxy (Proxy(..))
 import Typisch.Row (class Cons, class Cons2, class Cons3, class Replaces)
 
 type Text cell = ( text :: cell )
@@ -34,7 +34,7 @@ type BindChange r = ( change :: ChangeEvent -> Effect Unit | r )
 type Input v r = ( value :: v | r )
 
 type InputOn v r on = ( on :: Record on | Input v r )
- 
+
 type ViewInput r = ( defaultValue :: String | r )
 
 type BindInput r on = ( on :: (Record (BindChange on)) | ViewInput r )
@@ -62,8 +62,8 @@ viewInputCpt = R.memo' (R.hooksComponent "viewInput" cpt) where
     where
       adjust :: String -> Builder (Input cell base) (ViewInput base)
       adjust val =  RB.insert defaultValueP val <<< RB.delete valueP
-      valueP = SProxy :: SProxy "value"
-      defaultValueP = SProxy :: SProxy "defaultValue"
+      valueP = Proxy :: Proxy "value"
+      defaultValueP = Proxy :: Proxy "defaultValue"
 
 -- | Render an input component whose value is the value of the given
 -- | cursor. Refreshes when the view is updated. Changes to the input
@@ -73,7 +73,7 @@ bindInput
   :: forall cell base
    . T.ReadWrite cell String
   => Cons2 "defaultValue" String "on" (Record (BindChange ())) base (ViewInput base) (BindInput base ())
-  => Cons "value" cell base (Input cell base) 
+  => Cons "value" cell base (Input cell base)
   => Record (Input cell base) -> R.Element
 bindInput props = R.createElement bindInputCpt props []
 
@@ -91,9 +91,9 @@ bindInputCpt = R.memo' (R.hooksComponent "bindInput" cpt) where
     where
       adjust :: String -> Builder (Input cell base) (BindInput base ())
       adjust val = RB.insert onP { change } <<< RB.insert defaultValueP val <<< RB.delete valueP
-      onP = SProxy :: SProxy "on"
-      valueP = SProxy :: SProxy "value"
-      defaultValueP = SProxy :: SProxy "defaultValue"
+      onP = Proxy :: Proxy "on"
+      valueP = Proxy :: Proxy "value"
+      defaultValueP = Proxy :: Proxy "defaultValue"
       change :: ChangeEvent -> Effect Unit
       change e = void $ T.write (R.unsafeEventValue e) value
 
@@ -122,10 +122,10 @@ bindInputOnCpt = R.memo' (R.hooksComponent "bindInputOn" cpt) where
     where
       adjust :: String -> Builder (InputOn cell base on) (BindInput base on)
       adjust val = RB.modify onP (Record.insert changeP change) <<< RB.insert defaultValueP val <<< RB.delete valueP
-      onP = SProxy :: SProxy "on"
-      valueP = SProxy :: SProxy "value"
-      changeP = SProxy :: SProxy "change"
-      defaultValueP = SProxy :: SProxy "defaultValue"
+      onP = Proxy :: Proxy "on"
+      valueP = Proxy :: Proxy "value"
+      changeP = Proxy :: Proxy "change"
+      defaultValueP = Proxy :: Proxy "defaultValue"
       change :: ChangeEvent -> Effect Unit
       change e = void $ T.write (R.unsafeEventValue e) value
 
@@ -175,9 +175,9 @@ bindCheckboxCpt = R.memo' (R.hooksComponent "bindCheckbox" cpt) where
       adjust val = addType <<< addOn <<< changeChecked where
         change :: ChangeEvent -> Effect Unit
         change e = void $ T.write (not val) checked
-        addType = RB.insert (SProxy :: SProxy "type") "checkbox"
-        addOn   = RB.insert (SProxy :: SProxy "on") { change }
-        changeChecked = RB.modify (SProxy :: SProxy "checked") (const val)
+        addType = RB.insert (Proxy :: Proxy "type") "checkbox"
+        addOn   = RB.insert (Proxy :: Proxy "on") { change }
+        changeChecked = RB.modify (Proxy :: Proxy "checked") (const val)
 
 -- | Like `bindCheckbox` but allows you to add to the 'on' prop
 bindCheckboxOn
@@ -218,7 +218,7 @@ bindCheckboxOnCpt = R.memo' (R.hooksComponent "bindCheckbox'" cpt) where
       adjust val = addType <<< changeOn <<< changeChecked where
         change :: ChangeEvent -> Effect Unit
         change e = void $ T.write (not val) checked
-        addType = RB.insert (SProxy :: SProxy "type") "checkbox"
-        changeChecked = RB.modify (SProxy :: SProxy "checked") (const val)
-        changeOn  = RB.modify (SProxy :: SProxy "on") (Record.insert changeP change) where
-          changeP = SProxy :: SProxy "change"
+        addType = RB.insert (Proxy :: Proxy "type") "checkbox"
+        changeChecked = RB.modify (Proxy :: Proxy "checked") (const val)
+        changeOn  = RB.modify (Proxy :: Proxy "on") (Record.insert changeP change) where
+          changeP = Proxy :: Proxy "change"
