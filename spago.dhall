@@ -7,7 +7,7 @@
   , "record"
   , "toestand"
   , "typisch"
-, ]
+  ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
 }
